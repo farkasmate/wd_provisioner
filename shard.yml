@@ -1,0 +1,13 @@
+name: wd_provisioner
+version: 0.1.0
+
+authors:
+  - Mate Farkas <mate.farkas@sch.hu>
+
+targets:
+  wd_provisioner:
+    main: src/wd_provisioner.cr
+
+crystal: 1.8.2
+
+license: MIT
