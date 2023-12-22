@@ -1,15 +1,14 @@
 require "kubernetes"
-require "spec"
 
 module Kubernetes
-  struct Namespace
+  struct PersistentVolume
     include Serializable
   end
 
-  define_resource "namespaces",
+  define_resource "persistentvolumes",
     group: "",
-    type: Resource(Namespace),
+    type: Resource(PersistentVolume),
     prefix: "api",
-    kind: "Namespace",
+    kind: "PersistentVolume",
     cluster_wide: true
 end

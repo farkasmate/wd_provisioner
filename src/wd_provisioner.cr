@@ -1,6 +1,8 @@
-# TODO: Write documentation for `WdProvisioner`
+require "./controller"
+
 module WdProvisioner
   VERSION = "0.1.0"
 
-  # TODO: Put your code here
+  controller = Controller.new
+  controller.process_pvcs
 end
