@@ -1,0 +1,5 @@
+services:
+  wd_provisioner:
+    build: .
+    image: matefarkas/wd_provisioner:latest
+    network_mode: default
