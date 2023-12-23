@@ -1,24 +1,37 @@
 require "kubernetes"
 
-require "./persistentvolume"
-require "./persistentvolumeclaim"
+require "./kubernetes/ext"
 
 module WdProvisioner
   class Controller
-    def initialize(@k8s : Kubernetes::Client = Kubernetes::Client.new)
+    @storage_class : Kubernetes::StorageClass
+    @is_default_class : Bool
+
+    def initialize(*, client @k8s : Kubernetes::Client = Kubernetes::Client.new, @storage_class_name = "wd-iscsi")
       Log.setup_from_env
       @log = Log.for("wd-provisioner.controller")
+
+      sc = @k8s.storageclasses(namespace: nil).find { |sc| sc.metadata.name == @storage_class_name }
+
+      raise "StorageClass #{@storage_class_name} not found" unless sc
+
+      @storage_class = sc
+      @is_default_class = @storage_class.metadata.annotations["storageclass.kubernetes.io/is-default-class"] == "true"
     end
 
     def process_pvcs
+      @log.info { "Processing PersistentVolumeClaims targeting #{@storage_class_name} StorageClass" }
+
       @k8s.watch_persistentvolumeclaims(namespace: nil) do |watch|
         pvc = watch.object
-        pv_name = "wd-iscsi-#{pvc.metadata.name}"
+
+        next unless matching_storage_class? pvc
 
         case watch
         when .added?
           create_pv(pvc)
         when .deleted?
+          pv_name = "#{@storage_class_name}-#{pvc.metadata.name}"
           @log.info { "PersistentVolume #{pv_name} deleted" }
 
           @k8s.delete_persistentvolume(name: pv_name)
@@ -30,18 +43,18 @@ module WdProvisioner
       end
     end
 
-    def create_pv(pvc : Kubernetes::Resource(Kubernetes::PersistentVolumeClaim)) : Kubernetes::Resource(Kubernetes::PersistentVolume) | Nil
-      pv_name = "wd-iscsi-#{pvc.metadata.name}" # FIXME
+    def create_pv(pvc : Kubernetes::Resource(Kubernetes::PersistentVolumeClaim)) : Kubernetes::Resource(Kubernetes::PersistentVolume)?
+      pv_name = "#{@storage_class_name}-#{pvc.metadata.name}"
 
       pv = @k8s.apply_persistentvolume(
         metadata: {
           name:        pv_name,
           annotations: {
-            "pv.kubernetes.io/provisioned-by": "farkasmate.github.io/wd-provisioner",
+            "pv.kubernetes.io/provisioned-by": @storage_class.provisioner,
           },
         },
         spec: {
-          storageClassName: "wd-iscsi",
+          storageClassName: @storage_class_name,
           claimRef:         {
             apiVersion: "v1",
             kind:       "PersistentVolumeClaim",
@@ -75,6 +88,10 @@ module WdProvisioner
 
         nil
       end
+    end
+
+    def matching_storage_class?(pvc : Kubernetes::Resource(Kubernetes::PersistentVolumeClaim)) : Bool
+      (@is_default_class && pvc.spec.storage_class_name.nil?) || (@storage_class_name == pvc.spec.storage_class_name)
     end
   end
 end

@@ -6,6 +6,7 @@ module Kubernetes
 
     field access_modes : Array(String)?
     field resources : Resources
+    field storage_class_name : String
 
     struct Resources
       include Serializable

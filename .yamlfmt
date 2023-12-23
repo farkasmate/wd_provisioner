@@ -1,0 +1,14 @@
+# vim: set filetype=yaml:
+doublestar: true
+
+include:
+  - '**/*.{yaml,yml}'
+  - .yamlfmt
+
+exclude:
+  - config.yaml
+  - lib/**
+
+formatter:
+  type: basic
+  retain_line_breaks: true

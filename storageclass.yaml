@@ -1,0 +1,11 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+
+metadata:
+  name: wd-iscsi
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+
+provisioner: farkasmate.github.io/wd-provisioner
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
