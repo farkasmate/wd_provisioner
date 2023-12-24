@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: wd-provisioner-controller
+
+spec:
+  template:
+    spec:
+      containers:
+        - name: controller
+          image: matefarkas/wd_provisioner:latest
+      serviceAccountName: wd-provisioner
