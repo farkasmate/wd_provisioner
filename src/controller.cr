@@ -11,7 +11,7 @@ module WdProvisioner
       Log.setup_from_env
       @log = Log.for("wd-provisioner.controller")
 
-      sc = @k8s.storageclasses(namespace: nil).find { |sc| sc.metadata.name == @storage_class_name }
+      sc = @k8s.storageclass(name: @storage_class_name)
 
       raise "StorageClass #{@storage_class_name} not found" unless sc
 

@@ -35,7 +35,7 @@ module WdProvisioner
         in Nil
           pv_for_pvc.should_not be_nil
         in Kubernetes::Resource(Kubernetes::PersistentVolume)
-          pv = k8s.persistentvolumes(namespace: nil).items.find { |pv| pv.metadata.name == pv_for_pvc.metadata.name }
+          pv = k8s.persistentvolume(name: pv_for_pvc.metadata.name)
           pv.should be_a(Kubernetes::Resource(Kubernetes::PersistentVolume))
 
           k8s.delete_persistentvolumeclaim(namespace: pvc.metadata.namespace, name: pvc.metadata.name)
