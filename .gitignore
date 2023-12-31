@@ -5,3 +5,4 @@
 /docs/
 /lib/
 config.yaml
+spec/kustomize/id_rsa

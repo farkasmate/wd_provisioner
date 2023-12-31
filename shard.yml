@@ -8,6 +8,9 @@ dependencies:
   kubernetes:
     github: farkasmate/crystal-kubernetes
     branch: fix-cluster-wide-resources
+  ssh:
+    github: 84codes/ssh.cr
+    ref: e8cb9291e279fac5276a647b03d512c5022ec437
 
 targets:
   entrypoint:

@@ -8,14 +8,23 @@ resources:
   - namespace.yaml
   - test-rbac.yaml
 
+replicas:
+  - name: wd-provisioner-controller
+    count: 0
+
+secretGenerator:
+  - name: wd-iscsi
+    behavior: merge
+    files:
+      - ssh-privatekey=id_rsa
+    type: kubernetes.io/ssh-auth
+
 patches:
+  - path: storageclass_patch.yaml
   - patch: |-
-      - op: add
-        path: /rules/0/verbs/- # NOTE: persistentvolumeclaims
-        value: create
-      - op: add
-        path: /rules/0/verbs/- # NOTE: persistentvolumeclaims
-        value: patch
+      - op: replace
+        path: /rules/0/verbs # NOTE: persistentvolumeclaims
+        value: ["*"]
     target:
       kind: ClusterRole
       name: wd-provisioner

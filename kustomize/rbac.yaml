@@ -24,6 +24,7 @@ rules:
       - ""
     resources:
       - persistentvolumes
+      - secrets
     verbs:
       - "*"
   - apiGroups:

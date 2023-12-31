@@ -10,4 +10,15 @@ spec:
       containers:
         - name: controller
           image: matefarkas/wd_provisioner:latest
+          volumeMounts:
+            - name: ssh-key
+              mountPath: /config/
       serviceAccountName: wd-provisioner
+      volumes:
+        - name: ssh-key
+          secret:
+            secretName: wd-iscsi
+            defaultMode: 0400
+            items:
+              - key: ssh-privatekey
+                path: ssh.key

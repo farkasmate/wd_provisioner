@@ -1,5 +1,13 @@
 services:
-  wd_provisioner:
-    build: .
+  wd_provisioner: &wd_provisioner
+    build:
+      context: .
+      target: ALPINE
     image: matefarkas/wd_provisioner:latest
     network_mode: default
+
+  minimal:
+    !!merge <<: *wd_provisioner
+    build:
+      target: MINIMAL
+    image: matefarkas/wd_provisioner:minimal

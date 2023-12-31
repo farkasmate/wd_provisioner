@@ -12,7 +12,6 @@ RUN --mount=type=cache,target=/root/.cache/crystal \
   --cross-compile \
   --target=aarch64-linux-musl \
   --production \
-  --static \
   | tee /tmp/build.log \
   && grep '^cc' /tmp/build.log > link.sh
 
@@ -25,6 +24,7 @@ RUN apk add --no-cache \
   gc-dev \
   libevent-static \
   libgcrypt-static \
+  libssh-dev \
   openssl-libs-static \
   pcre2-dev \
   yaml-static \
@@ -36,8 +36,23 @@ COPY --from=BUILDER /build/bin/ bin/
 RUN . link.sh \
   && strip bin/entrypoint
 
-FROM scratch
+RUN mkdir lib/ \
+  && ldd bin/entrypoint | cut -f2 | cut -d' ' -f3 | xargs -I'{}' cp {} lib/
+
+FROM alpine:latest AS ALPINE
+
+RUN apk add --no-cache \
+  gc \
+  libssh \
+  pcre2
 
 COPY --from=LINKER /build/bin/entrypoint /
+
+ENTRYPOINT ["/entrypoint"]
+
+FROM scratch AS MINIMAL
+
+COPY --from=LINKER /build/bin/entrypoint /
+COPY --from=LINKER /build/lib/ /lib/
 
 ENTRYPOINT ["/entrypoint"]

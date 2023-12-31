@@ -11,6 +11,10 @@ resources:
 commonLabels:
   app: wd-provisioner
 
-replicas:
-  - name: wd-provisioner-controller
-    count: 1
+secretGenerator:
+  - name: wd-iscsi
+    files:
+      - ssh-privatekey=id_rsa
+    type: kubernetes.io/ssh-auth
+    options:
+      disableNameSuffixHash: true

@@ -1,0 +1,9 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+
+metadata:
+  name: wd-iscsi
+
+parameters:
+  host: 10.100.0.101
+  sizeLimit: 16Gi

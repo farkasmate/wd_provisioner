@@ -9,3 +9,7 @@ metadata:
 provisioner: farkasmate.github.io/wd-provisioner
 reclaimPolicy: Retain
 volumeBindingMode: WaitForFirstConsumer
+
+parameters:
+  host: 127.0.0.1
+  user: sshd

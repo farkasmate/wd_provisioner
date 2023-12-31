@@ -8,3 +8,7 @@ shards:
     git: https://github.com/farkasmate/crystal-kubernetes.git
     version: 0.1.0+git.commit.b72e4fee290a5bf41dabd6453b10349a7628f1b3
 
+  ssh:
+    git: https://github.com/84codes/ssh.cr.git
+    version: 0.1.0+git.commit.e8cb9291e279fac5276a647b03d512c5022ec437
+

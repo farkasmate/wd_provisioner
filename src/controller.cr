@@ -1,13 +1,19 @@
 require "kubernetes"
 
+require "./controller/*"
 require "./kubernetes/ext"
+require "./quantity"
+require "./ssh"
 
 module WdProvisioner
   class Controller
+    include Quantity
+
     @storage_class : Kubernetes::StorageClass
     @is_default_class : Bool
+    @size_limit : Int32
 
-    def initialize(*, client @k8s : Kubernetes::Client = Kubernetes::Client.new, @storage_class_name = "wd-iscsi")
+    def initialize(*, client @k8s : Kubernetes::Client = Kubernetes::Client.new, @storage_class_name = "wd-iscsi", @private_key = "/config/ssh.key")
       Log.setup_from_env
       @log = Log.for("wd-provisioner.controller")
 
@@ -17,6 +23,18 @@ module WdProvisioner
 
       @storage_class = sc
       @is_default_class = @storage_class.metadata.annotations["storageclass.kubernetes.io/is-default-class"] == "true"
+
+      @size_limit = estimate_gb(@storage_class.parameters.size_limit)
+
+      raise "SSH private key #{private_key} not found" unless File.exists? private_key
+
+      params = @storage_class.parameters
+      @ssh = WdSSH.new(host: params.host, port: params.port.to_i, user: params.user, private_key: private_key)
+      at_exit { @ssh.close }
+
+      @log.debug { "StorageClass: #{@storage_class_name}#{@is_default_class ? " (DEFAULT)" : ""}" }
+      @log.debug { "PersistentVolume size limit: #{@size_limit}GB" }
+      @log.debug { "SSH private key path: #{@private_key}" }
     end
 
     def process_pvcs
@@ -27,66 +45,39 @@ module WdProvisioner
 
         next unless matching_storage_class? pvc
 
+        name = "#{@storage_class_name}-#{pvc.metadata.name}"
+        namespace = pvc.metadata.namespace
+
         case watch
         when .added?
-          create_pv(pvc)
-        when .deleted?
-          pv_name = "#{@storage_class_name}-#{pvc.metadata.name}"
-          @log.info { "PersistentVolume #{pv_name} deleted" }
+          begin
+            size = estimate_gb(pvc.spec.resources.requests.storage)
+          rescue ex
+            @log.error { "PersistentVolumeClaim #{pvc.metadata.name}'s storage request can't be parsed: #{ex.message}" }
 
-          @k8s.delete_persistentvolume(name: pv_name)
+            next
+          end
+
+          if size > @size_limit
+            @log.error { "PersistentVolumeClaim #{pvc.metadata.name}'s storage request exceeds StorageClass limit: #{@size_limit}GB" }
+
+            next
+          end
+
+          next unless password = create_secret(name, namespace)
+
+          next unless create_iscsi(name, password, size)
+
+          next unless create_pv(name, pvc)
+        when .deleted?
+          delete_pv(name)
+          delete_iscsi(name)
+          delete_secret(name, namespace)
         else
           @log.debug { "PersistentVolume #{pvc.metadata.namespace}/#{pvc.metadata.name} #{watch.type} event ignored" }
 
           next
         end
-      end
-    end
-
-    def create_pv(pvc : Kubernetes::Resource(Kubernetes::PersistentVolumeClaim)) : Kubernetes::Resource(Kubernetes::PersistentVolume)?
-      pv_name = "#{@storage_class_name}-#{pvc.metadata.name}"
-
-      pv = @k8s.apply_persistentvolume(
-        metadata: {
-          name:        pv_name,
-          annotations: {
-            "pv.kubernetes.io/provisioned-by": @storage_class.provisioner,
-          },
-        },
-        spec: {
-          storageClassName: @storage_class_name,
-          claimRef:         {
-            apiVersion: "v1",
-            kind:       "PersistentVolumeClaim",
-            name:       pvc.metadata.name,
-            namespace:  pvc.metadata.namespace,
-          },
-          capacity: {
-            storage: pvc.spec.resources.requests.storage,
-          },
-          accessModes: pvc.spec.access_modes,
-          iscsi:       {
-            targetPortal:    "10.100.0.101",
-            iqn:             "iqn.2013-03.com.wdc:mycloudex2ultra:#{pv_name}",
-            lun:             0,
-            fsType:          "ext4",
-            chapAuthSession: true,
-            secretRef:       {
-              name: pv_name,
-            },
-          },
-        },
-      )
-
-      case pv
-      in Kubernetes::Resource(Kubernetes::PersistentVolume)
-        @log.info { "PersistentVolume #{pv_name} created" }
-
-        pv
-      in Kubernetes::Status
-        @log.error { "PersistentVolume #{pv_name} could not be created: #{pv.inspect}" }
-
-        nil
       end
     end
 
