@@ -9,6 +9,7 @@ module Kubernetes
     field capacity : PersistentVolumeClaim::Resources::Requests
     field access_modes : Array(String)
     field iscsi : Iscsi?
+    field persistent_volume_reclaim_policy : String = "Delete"
 
     struct ClaimRef
       include Serializable

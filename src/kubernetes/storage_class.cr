@@ -6,7 +6,7 @@ module Kubernetes
 
     field metadata : Metadata
     field provisioner : String
-    field reclaim_policy : String
+    field reclaim_policy : String = "Delete"
     field parameters : Parameters
 
     struct Parameters

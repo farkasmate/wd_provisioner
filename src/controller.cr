@@ -70,6 +70,15 @@ module WdProvisioner
 
           next unless create_pv(name, pvc)
         when .deleted?
+          @log.info { "PersistentVolumeClaim #{namespace}/#{name} was deleted" }
+
+          pv = get_pv(name)
+          if pv && pv.spec.persistent_volume_reclaim_policy == "Retain"
+            @log.info { "Skipping cleanup of #{name} resources as PersistentVolume reclaim policy is Retain" }
+
+            next
+          end
+
           delete_pv(name)
           delete_iscsi(name)
           delete_secret(name, namespace)

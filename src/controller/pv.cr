@@ -42,6 +42,7 @@ module WdProvisioner
               name: name,
             },
           },
+          persistentVolumeReclaimPolicy: @storage_class.reclaim_policy,
         },
       )
 
