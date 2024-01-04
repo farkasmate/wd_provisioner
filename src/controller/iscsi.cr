@@ -19,6 +19,15 @@ module WdProvisioner
         return false
       end
 
+      command = "mkfs.ext4 /shares/Volume_1/.systemfile/iscsi_images/#{name}.img"
+      output, exit_status = @ssh.exec! command
+
+      unless exit_status == 0
+        @log.error { "iSCSI target #{name} failed to format as ext4: #{output}" }
+
+        return false
+      end
+
       @log.info { "iSCSI target #{name} created" }
 
       true
