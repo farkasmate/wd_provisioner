@@ -2,7 +2,7 @@ require "kubernetes"
 require "spec"
 
 def test_client : Kubernetes::Client
-  config = File.open("config.yaml") { |f| Kubernetes::Config.from_yaml f }
+  config = File.open("kubeconfig.yaml") { |f| Kubernetes::Config.from_yaml f }
   kind = config.clusters.find! { |cluster| cluster.name == "kind-wd-provisioner" }.cluster
   cert = File.tempfile(prefix: "kubernetes", suffix: ".crt") do |tempfile|
     Base64.decode(kind.certificate_authority_data, tempfile)

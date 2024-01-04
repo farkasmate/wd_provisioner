@@ -8,8 +8,10 @@ resources:
   - rbac.yaml
   - storageclass.yaml
 
-commonLabels:
-  app: wd-provisioner
+labels:
+  - pairs:
+      app: wd-provisioner
+    includeSelectors: true
 
 secretGenerator:
   - name: wd-iscsi

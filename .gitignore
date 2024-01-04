@@ -4,5 +4,5 @@
 /bin/
 /docs/
 /lib/
-config.yaml
+kubeconfig.yaml
 spec/kustomize/id_rsa
